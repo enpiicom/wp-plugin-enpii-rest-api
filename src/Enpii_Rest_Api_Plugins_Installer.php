@@ -47,9 +47,44 @@ class Enpii_Rest_Api_Plugins_Installer {
 	// Admin page content
 	public function admin_page() {
 		$required_plugins = $this->get_required_plugins();
+		
+		$counts = [
+			'all' => 0,
+			'active' => 0,
+			'inactive' => 0,
+			'Must-Use' => 0,
+			'not-installed' => 0
+		];
+		
+		foreach ($required_plugins as $plugin) {
+			$plugin_path = WP_CONTENT_DIR . '/' . esc_attr($plugin['type']) . '/' . esc_attr($plugin['folder']);
+			$plugin_file = esc_attr($plugin['folder']) . '/' . esc_attr($plugin['main_file']) . '.php';
+	
+			$is_mu_plugin = $plugin['type'] === 'mu-plugins';
+			$is_installed = is_dir($plugin_path);
+			$is_active = is_plugin_active($plugin_file);
+			$is_registered = array_key_exists($plugin_file, get_plugins());
+	
+			$status = $is_active || ($is_installed && $is_mu_plugin) ? 'active' 
+					: ($is_registered && !$is_mu_plugin ? 'inactive' : 'not-installed');
+	
+			if ($is_mu_plugin) {
+				$status = 'Must-Use';
+			}
+	
+			$counts[$status]++;
+			$counts['all']++;
+		}
 		?>
 		<div class="wrap enpii-plugins-installer">
 			<h2 class="enpii-plugins-installer__title">Enpii Required Plugins Installer</h2>
+			<ul class="subsubsub">
+				<li class="all"><a href="#" class="current" aria-current="page">All <span class="count">(<?php echo esc_html($counts['all']); ?>)</span></a> |</li>
+				<li class="active"><a href="#">Active <span class="count">(<?php echo esc_html($counts['active']); ?>)</span></a> |</li>
+				<li class="inactive"><a href="#">Inactive <span class="count">(<?php echo esc_html($counts['inactive']); ?>)</span></a> |</li>
+				<li class="not-installed"><a href="#">Not Installed <span class="count">(<?php echo esc_html($counts['not-installed']); ?>)</span></a> |</li>
+				<li class="Must-Use"><a href="#">Must-Use <span class="count">(<?php echo esc_html($counts['Must-Use']); ?>)</span></a></li>
+			</ul>
 			<table class="enpii-plugins-installer__table">
 				<thead>
 					<tr>
@@ -59,30 +94,36 @@ class Enpii_Rest_Api_Plugins_Installer {
 					</tr>
 				</thead>
 				<tbody>
-					<?php
-					foreach ( $required_plugins as $slug => $plugin ) :
-						$plugin_path = WP_CONTENT_DIR . '/' . $plugin['type'] . '/' . $plugin['folder'];
-						$plugin_file = $plugin['folder'] . '/' . $plugin['main_file'] . '.php';
-
+					<?php foreach ($required_plugins as $slug => $plugin) :
+						$plugin_path = WP_CONTENT_DIR . '/' . esc_attr($plugin['type']) . '/' . esc_attr($plugin['folder']);
+						$plugin_file = esc_attr($plugin['folder']) . '/' . esc_attr($plugin['main_file']) . '.php';
+	
 						$is_mu_plugin = $plugin['type'] === 'mu-plugins';
-						$is_installed = is_dir( $plugin_path );
-						$is_active = is_plugin_active( $plugin_file );
-						$is_registered = array_key_exists( $plugin_file, get_plugins() );
-						?>
+						$is_installed = is_dir($plugin_path);
+						$is_active = is_plugin_active($plugin_file);
+						$is_registered = array_key_exists($plugin_file, get_plugins());
+	
+						$status = $is_active || ($is_installed && $is_mu_plugin) ? 'active' 
+								: ($is_registered && !$is_mu_plugin ? 'inactive' : 'not-installed');
+	
+						if ($is_mu_plugin) {
+							$status = 'Must-Use';
+						}
+					?>
 						<tr>
-							<td><?php echo esc_html( $plugin['name'] ); ?></td>
-							<td class="enpii-plugins-installer__status enpii-plugins-installer__status--<?php echo $is_active || ( $is_installed && $is_mu_plugin ) ? 'active' : ( $is_registered && ! $is_mu_plugin ? 'inactive' : 'not-installed' ); ?>">
-								<?php echo $is_active || ( $is_installed && $is_mu_plugin ) ? 'Active' : ( $is_registered && ! $is_mu_plugin ? 'Not Active' : 'Not Installed' ); ?>
+							<td><?php echo esc_html($plugin['name']); ?></td>
+							<td class="enpii-plugins-installer__status enpii-plugins-installer__status--<?php echo esc_attr($status); ?>">
+								<?php echo esc_html(ucfirst($status)); ?>
 							</td>
 							<td>
-								<?php if ( ! $is_installed ) : ?>
-									<button class="enpii-plugins-installer__button enpii-plugins-installer__button--install" data-slug="<?php echo esc_attr( $slug ); ?>">Install</button>
-								<?php elseif ( ! $is_active && $is_mu_plugin ) : ?>
+								<?php if (!$is_installed) : ?>
+									<button class="enpii-plugins-installer__button enpii-plugins-installer__button--install" data-slug="<?php echo esc_attr($slug); ?>">Install</button>
+								<?php elseif (!$is_active && $is_mu_plugin) : ?>
 									<span class="enpii-plugins-installer__status enpii-plugins-installer__status--active">Must-Use Activated</span>
-								<?php elseif ( ! $is_active && ! $is_mu_plugin ) : ?>
-									<button class="enpii-plugins-installer__button enpii-plugins-installer__button--activate" data-path="<?php echo esc_attr( $plugin['folder'] ); ?>" data-file="<?php echo esc_attr( $plugin['main_file'] ); ?>">Activate</button>
+								<?php elseif (!$is_active && !$is_mu_plugin) : ?>
+									<button class="enpii-plugins-installer__button enpii-plugins-installer__button--activate" data-path="<?php echo esc_attr($plugin['folder']); ?>" data-file="<?php echo esc_attr($plugin['main_file']); ?>">Activate</button>
 								<?php else : ?>
-									<button class="enpii-plugins-installer__button enpii-plugins-installer__button--deactivate" data-path="<?php echo esc_attr( $plugin['folder'] ); ?>" data-file="<?php echo esc_attr( $plugin['main_file'] ); ?>">Deactivate</button>
+									<button class="enpii-plugins-installer__button enpii-plugins-installer__button--deactivate" data-path="<?php echo esc_attr($plugin['folder']); ?>" data-file="<?php echo esc_attr($plugin['main_file']); ?>">Deactivate</button>
 								<?php endif; ?>
 							</td>
 						</tr>
@@ -90,22 +131,16 @@ class Enpii_Rest_Api_Plugins_Installer {
 				</tbody>
 			</table>
 		</div>
-
 		<div id="plugin-action-spinner">
 			<div class="lds-roller">
-				<div></div>
-				<div></div>
-				<div></div>
-				<div></div>
-				<div></div>
-				<div></div>
-				<div></div>
-				<div></div>
+				<div></div><div></div><div></div><div></div>
+				<div></div><div></div><div></div><div></div>
 			</div>
 			<p>Processing</p>
 		</div>
 		<?php
 	}
+	
 	// Handle plugin installation
 	public function install_plugin() {
 		if ( ! current_user_can( 'install_plugins' ) ) {
