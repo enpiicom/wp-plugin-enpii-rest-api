@@ -47,8 +47,8 @@ class Enpii_Rest_Api_Plugins_Installer {
 	public function admin_page() {
 		$required_plugins = $this->get_required_plugins();
 		?>
-		<div class="enpii-plugins-installer">
-			<h2 class="enpii-plugins-installer__title">Required Plugins</h2>
+		<div class="wrap enpii-plugins-installer">
+			<h2 class="enpii-plugins-installer__title">Enpii Required Plugins Installer</h2>
 			<table class="enpii-plugins-installer__table">
 				<thead>
 					<tr>
