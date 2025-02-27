@@ -32,10 +32,16 @@ $spinner-animation-duration: 1.2s;
         color: $white-color;
     }
 
+    &__table th {
+        text-transform: uppercase;
+        font-weight: 700;
+    }
+
     &__table th,
     &__table td {
         padding: 12px;
         text-align: left;
+        font-size: 14px;
     }
 
     &__table tbody tr:nth-child(odd) {

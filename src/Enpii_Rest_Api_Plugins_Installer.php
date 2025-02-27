@@ -6,7 +6,6 @@ namespace Enpii_Rest_Api;
 
 class Enpii_Rest_Api_Plugins_Installer {
 
-
 	public function __construct() {
 		add_action( 'admin_menu', [ $this, 'add_admin_menu' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_scripts' ] );
@@ -78,7 +77,7 @@ class Enpii_Rest_Api_Plugins_Installer {
 								<?php if ( ! $is_installed ) : ?>
 									<button class="enpii-plugins-installer__button enpii-plugins-installer__button--install" data-slug="<?php echo esc_attr( $slug ); ?>">Install</button>
 								<?php elseif ( ! $is_active && $is_mu_plugin ) : ?>
-									<span class="enpii-plugins-installer__status-text enpii-plugins-installer__status-text--active">Must-Use Activated</span>
+									<span class="enpii-plugins-installer__status enpii-plugins-installer__status--active">Must-Use Activated</span>
 								<?php elseif ( ! $is_active && ! $is_mu_plugin ) : ?>
 									<button class="enpii-plugins-installer__button enpii-plugins-installer__button--activate" data-path="<?php echo esc_attr( $plugin['folder'] ); ?>" data-file="<?php echo esc_attr( $plugin['main_file'] ); ?>">Activate</button>
 								<?php else : ?>
