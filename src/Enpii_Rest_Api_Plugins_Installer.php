@@ -6,6 +6,7 @@ namespace Enpii_Rest_Api;
 
 class Enpii_Rest_Api_Plugins_Installer {
 
+
 	public function __construct() {
 		add_action( 'admin_menu', [ $this, 'add_admin_menu' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_scripts' ] );
@@ -16,7 +17,7 @@ class Enpii_Rest_Api_Plugins_Installer {
 
 	public function enqueue_admin_scripts( $hook ) {
 		wp_enqueue_style( 'enpii-rest-api-admin-style', plugin_dir_url( __FILE__ ) . '../public-assets/dist/css/admin.css', [], ENPII_REST_API_PLUGIN_VERSION );
-	}    
+	}
 
 	// Define required plugins
 	protected function get_required_plugins() {
@@ -46,120 +47,110 @@ class Enpii_Rest_Api_Plugins_Installer {
 	// Admin page content
 	public function admin_page() {
 		$required_plugins = $this->get_required_plugins();
-
-		echo '<div class="wrap"><h2>Required Plugins</h2><table class="widefat">';
-		echo '<thead><tr><th>Plugin Name</th><th>Status</th><th>Action</th></tr></thead><tbody>';
-
-		foreach ( $required_plugins as $slug => $plugin ) {
-			$plugin_path = WP_CONTENT_DIR . '/' . $plugin['type'] . '/' . $plugin['folder'];
-			$plugin_file = $plugin['folder'] . '/' . $plugin['main_file'] . '.php';
-
-			$is_mu_plugin = $plugin['type'] === 'mu-plugins';
-			$is_installed = is_dir( $plugin_path );
-			$is_active = is_plugin_active( $plugin_file );
-			$is_registered = array_key_exists( $plugin_file, get_plugins() );
-
-			echo "<tr><td>{$plugin['name']}</td>";
-
-			// Update status column
-			if ( $is_active || ( $is_installed && $is_mu_plugin ) ) {
-				echo '<td style="color: green;">Active</td>';
-			} elseif ( $is_registered && ! $is_mu_plugin ) {
-				echo '<td style="color: orange;">Not Active</td>';
-			} else {
-				echo '<td style="color: red;">Not Installed</td>';
-			}
-
-			echo '<td>';
-			if ( ! $is_installed ) {
-				echo '<button class="button enpii-install-plugin" data-slug="' . $slug . '">Install</button>';
-			} elseif ( $is_mu_plugin ) {
-				echo '<text style="color: green;>Must-Use Activated</text>';
-			} elseif ( ! $is_active && ! $is_mu_plugin ) {
-				echo '<button class="button enpii-activate-plugin" data-path="' . $plugin['folder'] . '" data-file="' . $plugin['main_file'] . '">Activate</button>';
-			} else {
-				echo '<button class="button enpii-deactivate-plugin" data-path="' . $plugin['folder'] . '" data-file="' . $plugin['main_file'] . '">Deactivate</button>';
-			}
-			echo '</td></tr>';
-		}
-
-		echo '</tbody></table></div>';
 		?>
+		<div class="enpii-plugins-installer">
+			<h2 class="enpii-plugins-installer__title">Required Plugins</h2>
+			<table class="enpii-plugins-installer__table">
+				<thead>
+					<tr>
+						<th>Plugin Name</th>
+						<th>Status</th>
+						<th>Action</th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php
+					foreach ( $required_plugins as $slug => $plugin ) :
+						$plugin_path = WP_CONTENT_DIR . '/' . $plugin['type'] . '/' . $plugin['folder'];
+						$plugin_file = $plugin['folder'] . '/' . $plugin['main_file'] . '.php';
+
+						$is_mu_plugin = $plugin['type'] === 'mu-plugins';
+						$is_installed = is_dir( $plugin_path );
+						$is_active = is_plugin_active( $plugin_file );
+						$is_registered = array_key_exists( $plugin_file, get_plugins() );
+						?>
+						<tr>
+							<td><?php echo esc_html( $plugin['name'] ); ?></td>
+							<td class="enpii-plugins-installer__status enpii-plugins-installer__status--<?php echo $is_active || ( $is_installed && $is_mu_plugin ) ? 'active' : ( $is_registered && ! $is_mu_plugin ? 'inactive' : 'not-installed' ); ?>">
+								<?php echo $is_active || ( $is_installed && $is_mu_plugin ) ? 'Active' : ( $is_registered && ! $is_mu_plugin ? 'Not Active' : 'Not Installed' ); ?>
+							</td>
+							<td>
+								<?php if ( ! $is_installed ) : ?>
+									<button class="enpii-plugins-installer__button enpii-plugins-installer__button--install" data-slug="<?php echo esc_attr( $slug ); ?>">Install</button>
+								<?php elseif ( ! $is_active && $is_mu_plugin ) : ?>
+									<span class="enpii-plugins-installer__status-text enpii-plugins-installer__status-text--active">Must-Use Activated</span>
+								<?php elseif ( ! $is_active && ! $is_mu_plugin ) : ?>
+									<button class="enpii-plugins-installer__button enpii-plugins-installer__button--activate" data-path="<?php echo esc_attr( $plugin['folder'] ); ?>" data-file="<?php echo esc_attr( $plugin['main_file'] ); ?>">Activate</button>
+								<?php else : ?>
+									<button class="enpii-plugins-installer__button enpii-plugins-installer__button--deactivate" data-path="<?php echo esc_attr( $plugin['folder'] ); ?>" data-file="<?php echo esc_attr( $plugin['main_file'] ); ?>">Deactivate</button>
+								<?php endif; ?>
+							</td>
+						</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
+		</div>
+
+		<div id="plugin-action-spinner">
+			<div class="lds-roller">
+				<div></div>
+				<div></div>
+				<div></div>
+				<div></div>
+				<div></div>
+				<div></div>
+				<div></div>
+				<div></div>
+			</div>
+			<p>Processing</p>
+		</div>
+
 		<script>
 			jQuery(document).ready(function($) {
-				$('.enpii-install-plugin').on('click', function() {
-					var button = $(this);
-					var slug = button.data('slug');
+				function handlePluginAction(button, action, data, successText) {
+					$('#plugin-action-spinner').css('display', 'flex').css('opacity', '1');
+					button.text(action + 'ing...').prop('disabled', true);
+					$.post(ajaxurl, data, function(response) {
+						if (response.success) {
+							if (successText) {
+								button.replaceWith('<span class="enpii-plugins-installer__status-text enpii-plugins-installer__status-text--active">' + successText + '</span>');
+							}
+							setTimeout(() => window.location.reload(), 1000);
+						} else {
+							button.text(action + ' Failed').css('background-color', 'red').prop('disabled', false);
+						}
+					}).always(function() {
+						$('#plugin-action-spinner').css('opacity', '0');
+						setTimeout(() => $('#plugin-action-spinner').css('display', 'none'), 500);
+					});
+				}
 
-					button.text('Installing...').prop('disabled', true);
-
-					$.post(ajaxurl, {
+				$('.enpii-plugins-installer__button--install').on('click', function() {
+					handlePluginAction($(this), 'Install', {
 						action: 'enpii_install_plugin',
-						plugin_slug: slug
-					}, function(response) {
-						if (response.success) {
-							button.replaceWith('<button class="button enpii-activate-plugin" data-path="' +
-								response.plugin_path + '" data-file="' + response.plugin_file + '">Activate</button>');
-							setTimeout(function() {
-								window.location.reload();
-							}, 1000); // Refresh after 1 second
-						} else {
-							button.text('Install Failed').css('background-color', 'red').prop('disabled', false);
-						}
+						plugin_slug: $(this).data('slug')
 					});
 				});
 
-				$(document).on('click', '.enpii-activate-plugin', function() {
-					var button = $(this);
-					var pluginPath = button.data('path');
-					var pluginFile = button.data('file');
-
-					button.text('Activating...').prop('disabled', true);
-
-					$.post(ajaxurl, {
+				$(document).on('click', '.enpii-plugins-installer__button--activate', function() {
+					handlePluginAction($(this), 'Activate', {
 						action: 'enpii_activate_plugin',
-						plugin_path: pluginPath,
-						plugin_file: pluginFile
-					}, function(response) {
-						if (response.success) {
-							button.replaceWith('<span style="color: green;">Activated</span>');
-							setTimeout(function() {
-							window.location.reload();
-						}, 1000); // Refresh after 1 second
-						} else {
-							button.text('Activate Failed').css('background-color', 'red').prop('disabled', false);
-						}
-					});
+						plugin_path: $(this).data('path'),
+						plugin_file: $(this).data('file')
+					}, 'Activated');
 				});
 
-				$(document).on('click', '.enpii-deactivate-plugin', function() {
-				var button = $(this);
-				var pluginPath = button.data('path');
-				var pluginFile = button.data('file');
-
-				button.text('Deactivating...').prop('disabled', true);
-
-				$.post(ajaxurl, { 
-					action: 'enpii_deactivate_plugin', 
-					plugin_path: pluginPath, 
-					plugin_file: pluginFile 
-				}, function(response) {
-					if (response.success) {
-						button.text('Deactivated').css('background-color', 'orange');
-						setTimeout(function() {
-							window.location.reload();
-						}, 1000); // Refresh after 1 second
-					} else {
-						button.text('Deactivate Failed').css('background-color', 'red').prop('disabled', false);
-					}
+				$(document).on('click', '.enpii-plugins-installer__button--deactivate', function() {
+					handlePluginAction($(this), 'Deactivate', {
+						action: 'enpii_deactivate_plugin',
+						plugin_path: $(this).data('path'),
+						plugin_file: $(this).data('file')
+					}, 'Deactivated');
 				});
-			});
-
 			});
 		</script>
 		<?php
 	}
-
 	// Handle plugin installation
 	public function install_plugin() {
 		if ( ! current_user_can( 'install_plugins' ) ) {
@@ -237,25 +228,25 @@ class Enpii_Rest_Api_Plugins_Installer {
 		if ( ! current_user_can( 'activate_plugins' ) ) {
 			wp_send_json_error( 'Permission denied.' );
 		}
-	
+
 		$plugin_path = sanitize_text_field( $_POST['plugin_path'] );
 		$plugin_file = sanitize_text_field( $_POST['plugin_file'] ) . '.php';
-	
+
 		$full_plugin_path = WP_PLUGIN_DIR . '/' . $plugin_path . '/' . $plugin_file;
-	
+
 		// Validate that the plugin exists before deactivating
 		if ( ! file_exists( $full_plugin_path ) ) {
 			wp_send_json_error( 'Plugin file not found: ' . $full_plugin_path );
 		}
-	
+
 		// Deactivate the plugin
 		deactivate_plugins( $plugin_path . '/' . $plugin_file );
-	
+
 		// Check if successfully deactivated
 		if ( is_plugin_active( $plugin_path . '/' . $plugin_file ) ) {
 			wp_send_json_error( 'Deactivation failed.' );
 		}
-	
+
 		wp_send_json_success( 'Plugin deactivated successfully.' );
-	}    
+	}
 }
