@@ -16,6 +16,7 @@ class Enpii_Rest_Api_Plugins_Installer {
 
 	public function enqueue_admin_scripts( $hook ) {
 		wp_enqueue_style( 'enpii-rest-api-admin-style', plugin_dir_url( __FILE__ ) . '../public-assets/dist/css/admin.css', [], ENPII_REST_API_PLUGIN_VERSION );
+		wp_enqueue_script( 'enpii-rest-api-admin-script', plugin_dir_url( __FILE__ ) . '../public-assets/dist/js/admin.js', [ 'jquery' ], ENPII_REST_API_PLUGIN_VERSION, false );
 	}
 
 	// Define required plugins
@@ -47,8 +48,8 @@ class Enpii_Rest_Api_Plugins_Installer {
 	public function admin_page() {
 		$required_plugins = $this->get_required_plugins();
 		?>
-		<div class="enpii-plugins-installer">
-			<h2 class="enpii-plugins-installer__title">Required Plugins</h2>
+		<div class="wrap enpii-plugins-installer">
+			<h2 class="enpii-plugins-installer__title">Enpii Required Plugins Installer</h2>
 			<table class="enpii-plugins-installer__table">
 				<thead>
 					<tr>
@@ -103,51 +104,6 @@ class Enpii_Rest_Api_Plugins_Installer {
 			</div>
 			<p>Processing</p>
 		</div>
-
-		<script>
-			jQuery(document).ready(function($) {
-				function handlePluginAction(button, action, data, successText) {
-					$('#plugin-action-spinner').css('display', 'flex').css('opacity', '1');
-					button.text(action + 'ing...').prop('disabled', true);
-					$.post(ajaxurl, data, function(response) {
-						if (response.success) {
-							if (successText) {
-								button.replaceWith('<span class="enpii-plugins-installer__status-text enpii-plugins-installer__status-text--active">' + successText + '</span>');
-							}
-							setTimeout(() => window.location.reload(), 1000);
-						} else {
-							button.text(action + ' Failed').css('background-color', 'red').prop('disabled', false);
-						}
-					}).always(function() {
-						$('#plugin-action-spinner').css('opacity', '0');
-						setTimeout(() => $('#plugin-action-spinner').css('display', 'none'), 500);
-					});
-				}
-
-				$('.enpii-plugins-installer__button--install').on('click', function() {
-					handlePluginAction($(this), 'Install', {
-						action: 'enpii_install_plugin',
-						plugin_slug: $(this).data('slug')
-					});
-				});
-
-				$(document).on('click', '.enpii-plugins-installer__button--activate', function() {
-					handlePluginAction($(this), 'Activate', {
-						action: 'enpii_activate_plugin',
-						plugin_path: $(this).data('path'),
-						plugin_file: $(this).data('file')
-					}, 'Activated');
-				});
-
-				$(document).on('click', '.enpii-plugins-installer__button--deactivate', function() {
-					handlePluginAction($(this), 'Deactivate', {
-						action: 'enpii_deactivate_plugin',
-						plugin_path: $(this).data('path'),
-						plugin_file: $(this).data('file')
-					}, 'Deactivated');
-				});
-			});
-		</script>
 		<?php
 	}
 	// Handle plugin installation

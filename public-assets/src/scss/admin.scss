@@ -1,5 +1,5 @@
 $primary-color: #7D8DA6;
-$secondary-color: #F9FAFB;
+$secondary-color: #f0f6fc;
 $hover-color: #eef2f6;
 $white-color: #fff;
 $active-color: green;
@@ -13,9 +13,10 @@ $spinner-dot-size: 7.2px;
 $spinner-animation-duration: 1.2s;
 
 .enpii-plugins-installer {
-    &__title {
+    &__title, > h2:first-child {
         font-size: 1.5rem;
-        margin-bottom: 1rem;
+        margin-bottom: 1.5rem;
+        font-weight: normal;
     }
 
     &__table {
@@ -35,13 +36,14 @@ $spinner-animation-duration: 1.2s;
     &__table th {
         text-transform: uppercase;
         font-weight: 700;
+        font-size: 14px;
     }
 
     &__table th,
     &__table td {
         padding: 12px;
         text-align: left;
-        font-size: 14px;
+        font-size: 13px;
     }
 
     &__table tbody tr:nth-child(odd) {
