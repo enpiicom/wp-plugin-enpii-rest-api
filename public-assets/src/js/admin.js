@@ -50,17 +50,17 @@
                 counts.all++;
             });
 
-            $('.subsubsub .all .count').text(`(${counts.all})`);
-            $('.subsubsub .active .count').text(`(${counts.active})`);
-            $('.subsubsub .inactive .count').text(`(${counts.inactive})`);
-            $('.subsubsub .mustuse .count').text(`(${counts.mustuse})`);
+            $('.enpii-plugins-installer__tabs .all .count').text(`(${counts.all})`);
+            $('.enpii-plugins-installer__tabs .active .count').text(`(${counts.active})`);
+            $('.enpii-plugins-installer__tabs .inactive .count').text(`(${counts.inactive})`);
+            $('.enpii-plugins-installer__tabs .mustuse .count').text(`(${counts.mustuse})`);
         }
 
         // Plugin Status Filtering
-        $('.subsubsub a').on('click', function (e) {
+        $('.enpii-plugins-installer__tabs a').on('click', function (e) {
             e.preventDefault();
             const status = $(this).parent().attr('class');
-            $('.subsubsub a').removeClass('current');
+            $('.enpii-plugins-installer__tabs a').removeClass('current');
             $(this).addClass('current');
 
             pluginTable.find('tr').each(function () {
