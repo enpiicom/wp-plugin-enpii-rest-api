@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInitb0fd040b5be94344be5ecb4035263ddf
+class ComposerStaticInit5c0f92a4179b18a54c961d4fdc2c791f
 {
     public static $files = array (
         '92fc625a10c8697371abeecaa7ca1df8' => __DIR__ . '/../..' . '/enpii-rest-api-bootstrap.php',
@@ -31,9 +31,9 @@ class ComposerStaticInitb0fd040b5be94344be5ecb4035263ddf
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInitb0fd040b5be94344be5ecb4035263ddf::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInitb0fd040b5be94344be5ecb4035263ddf::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInitb0fd040b5be94344be5ecb4035263ddf::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit5c0f92a4179b18a54c961d4fdc2c791f::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit5c0f92a4179b18a54c961d4fdc2c791f::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInit5c0f92a4179b18a54c961d4fdc2c791f::$classMap;
 
         }, null, ClassLoader::class);
     }
