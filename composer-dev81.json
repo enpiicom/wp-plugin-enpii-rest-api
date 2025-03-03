@@ -22,9 +22,38 @@
   "require": {
     "php": "^7.3|^8.0"
   },
+  "require-dev": {
+    "johnpbloch/wordpress-core": "^6.7.0",
+    "wp-plugin/woocommerce": "*",
+    "wpackagist-plugin/query-monitor": "^3.15",
+    "wpackagist-theme/storefront": "^4.0",
+    "wpackagist-theme/twentytwentyfour": "^1.0.0",
+    "automattic/vipwpcs": "~3.0.0",
+    "phpcompatibility/php-compatibility": "~9.3.5",
+    "dealerdirect/phpcodesniffer-composer-installer": "~1.0.0",
+    "phpstan/phpstan": "~2.0.1",
+    "phpunit/phpunit": "~9.6",
+    "mockery/mockery": "~1.6",
+    "phpspec/prophecy": "~1.19.0",
+    "php-stubs/wordpress-stubs": "~6.6.2",
+    "brain/monkey": "~2.6.0",
+    "10up/wp_mock": "~1.0.0"
+  },
   "minimum-stability": "dev",
   "prefer-stable": true,
   "repositories": [
+    {
+      "type": "package",
+      "package": {
+        "name": "wp-plugin/woocommerce",
+        "version": "9.7.0",
+        "type": "wordpress-plugin",
+        "dist": {
+          "type": "zip",
+          "url": "https://downloads.wordpress.org/plugin/woocommerce.9.7.0.zip"
+        }
+      }
+    },
     {
       "type": "composer",
       "url": "https://wpackagist.org",
@@ -87,6 +116,18 @@
     }
   },
   "scripts": {
+    "post-install-cmd": [
+      "cp -r `find ./vendor/johnpbloch/wordpress-core -maxdepth 1 -mindepth 1 | cut -c3- | grep -vE 'wp-content$|composer.json$|wp-cli.yml$|README.md$|LICENSE.md$'` ./dev-docker/wordpress",
+      "rm -rf `find ./vendor/johnpbloch/wordpress-core -maxdepth 1 -mindepth 1 | cut -c3- | grep -vE 'license.txt|readme.html'`"
+    ],
+    "post-update-cmd": [
+      "cp -r `find ./vendor/johnpbloch/wordpress-core -maxdepth 1 -mindepth 1 | cut -c3- | grep -vE 'wp-content$|composer.json$|wp-cli.yml$|README.md$|LICENSE.md$'` ./dev-docker/wordpress",
+      "rm -rf `find ./vendor/johnpbloch/wordpress-core -maxdepth 1 -mindepth 1 | cut -c3- | grep -vE 'license.txt|readme.html'`"
+    ],
+    "dev-update": [
+      "cp -r `find ./vendor/johnpbloch/wordpress-core -maxdepth 1 -mindepth 1 | cut -c3- | grep -vE 'wp-content$|composer.json$|wp-cli.yml$|README.md$|LICENSE.md$'` ./dev-docker/wordpress",
+      "rm -rf `find ./vendor/johnpbloch/wordpress-core -maxdepth 1 -mindepth 1 | cut -c3- | grep -vE 'license.txt|readme.html'`"
+    ],
     "phpcs": [
       "./vendor/bin/phpcs"
     ],
