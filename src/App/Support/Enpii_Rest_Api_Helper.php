@@ -44,14 +44,14 @@ class Enpii_Rest_Api_Helper {
 		$missing_dirs = [];
 
 		if ( empty( $upload_path ) || ! is_dir( $upload_path ) ) {
-			$missing_dirs[] = __( 'Uploads directory is missing. Please create it with permission 0777.', 'enpii-rest-api' );
+			$missing_dirs[] = __( '<p>Uploads directory is missing. Please create it with permission 0777.</p>', 'enpii-rest-api' );
 		}
 
 		if ( ! is_dir( $upgrade_path ) ) {
-			$missing_dirs[] = __( 'Upgrade directory is missing. Please create it with permission 0777.', 'enpii-rest-api' );
+			$missing_dirs[] = __( '<p>Upgrade directory is missing. Please create it with permission 0777.</p>', 'enpii-rest-api' );
 		}
 
-		return implode( '<br />', $missing_dirs );
+		return implode( '', $missing_dirs );
 	}
 
 	/**
@@ -59,42 +59,31 @@ class Enpii_Rest_Api_Helper {
 	 */
 	public static function get_missing_plugin_message(): string {
 		return sprintf(
-			__( 'Plugin <strong>%1$s</strong> is required. Please <a href="%2$s">click here</a> to install and activate it first.', 'enpii-rest-api' ),
+			__( '<p>Plugin <strong>%1$s</strong> is required. Please <a href="%2$s">click here</a> to install and activate it first.</p>', 'enpii-rest-api' ),
 			'Enpii Base',
 			static::get_enpii_plugins_installer_url()
 		);
 	}
 
 	/**
-	 * Loads the Enpii Rest API plugin if all requirements are met.
-	 */
-	public static function load_plugin() {
-		if ( \Enpii_Base\App\Support\Enpii_Base_Helper::is_setup_app_completed() ) {
-			add_action(
-				'plugins_loaded',
-				function () {
-					\Enpii_Rest_Api\App\WP\Enpii_Rest_Api_WP_Plugin::init_with_wp_app(
-						ENPII_REST_API_PLUGIN_SLUG,
-						__DIR__,
-						plugin_dir_url( __FILE__ )
-					);
-				},
-				-111
-			);
-		}
-	}
-
-	/**
-	 * Displays an admin notice for errors.
+	 * Displays an admin notice for missing plugin.
 	 */
 	public static function display_admin_notice( string $error_message ) {
+		// Check if the notice should be hidden (transient exists)
+		if ( get_transient( 'enpii_rest_api_dismiss_notice' ) ) {
+			return;
+		}
+
 		$error_message = sprintf(
-			__( 'Plugin <strong>%s</strong> is not functioning.', 'enpii-rest-api' ),
+			__( '<h3><strong>%s</strong> is not functioning!</h3>', 'enpii-rest-api' ),
 			'Enpii Rest Api Plugin'
-		) . '<br />' . $error_message;
+		) . $error_message;
 		?>
-		<div class="notice notice-warning is-dismissible">
-			<p><?php echo $error_message; ?></p>
+		<div class="notice notice-warning is-dismissible enpii-rest-api-notice">
+			<span class="warning-icon">
+				<img src="<?php echo esc_url( plugin_dir_url( __FILE__ ) ); ?>../../../public-assets/images/warning-sign-icon.webp" alt="Enpii REST API" />
+			</span>
+			<div class="notice-content"><?php echo $error_message; ?></div>
 		</div>
 		<?php
 	}

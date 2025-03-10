@@ -98,6 +98,30 @@
             }, 'Deactivated');
         });
 
+        /*
+        * Ajax request that will hide the Enpii REST API admin notice or message.
+        */
+        function dismissAdminNotice() {
+            $.ajax( {
+                type: 'POST',
+                url: ajaxurl,
+                data: {
+                    nonce: enpiiDismissNotice.nonce,
+                    action: 'enpii_rest_api_dismiss_notice',
+                },
+                dataType: 'json',
+            } );
+        }
+
+        // Dismiss notice
+        $( document ).on(
+            'click',
+            '.enpii-rest-api-notice .notice-dismiss',
+            function () {
+                dismissAdminNotice();
+            }
+        );
+
         updatePluginCount();
     });
 })(jQuery);
