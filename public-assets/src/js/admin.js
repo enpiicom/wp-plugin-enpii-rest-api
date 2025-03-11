@@ -22,7 +22,6 @@
                 .always(() => hideSpinner());
         }
 
-
         function showSpinner() {
             spinner.css({ display: 'flex', opacity: '1' });
         }
@@ -102,7 +101,7 @@
         * Ajax request that will hide the Enpii REST API admin notice or message.
         */
         function dismissAdminNotice() {
-            $.ajax( {
+            $.ajax({
                 type: 'POST',
                 url: ajaxurl,
                 data: {
@@ -110,11 +109,11 @@
                     action: 'enpii_rest_api_dismiss_notice',
                 },
                 dataType: 'json',
-            } );
+            });
         }
 
         // Dismiss notice
-        $( document ).on(
+        $(document).on(
             'click',
             '.enpii-rest-api-notice .notice-dismiss',
             function () {
