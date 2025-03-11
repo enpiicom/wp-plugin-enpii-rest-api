@@ -12,12 +12,41 @@ class Enpii_Rest_Api_Plugins_Installer {
 		add_action( 'wp_ajax_enpii_install_plugin', [ $this, 'install_plugin' ] );
 		add_action( 'wp_ajax_enpii_activate_plugin', [ $this, 'activate_plugin' ] );
 		add_action( 'wp_ajax_enpii_deactivate_plugin', [ $this, 'deactivate_plugin' ] );
+		add_action( 'wp_ajax_enpii_rest_api_dismiss_notice', [ $this,'dismiss_admin_notice' ] );
+		add_action( 'wp_ajax_nopriv_enpii_rest_api_dismiss_notice', [ $this,'dismiss_admin_notice' ] );      
 	}
 
 	public function enqueue_admin_scripts( $hook ) {
-		wp_enqueue_style( 'enpii-rest-api-admin-style', plugin_dir_url( __FILE__ ) . '../public-assets/dist/css/admin.css', [], ENPII_REST_API_PLUGIN_VERSION );
-		wp_enqueue_script( 'enpii-rest-api-admin-script', plugin_dir_url( __FILE__ ) . '../public-assets/dist/js/admin.js', [ 'jquery' ], ENPII_REST_API_PLUGIN_VERSION, false );
+		wp_enqueue_style(
+			'enpii-rest-api-admin-style',
+			plugin_dir_url( __FILE__ ) . '../public-assets/dist/css/admin.css',
+			[],
+			ENPII_REST_API_PLUGIN_VERSION
+		);
+
+		wp_enqueue_script(
+			'enpii-rest-api-admin-script',
+			plugin_dir_url( __FILE__ ) . '../public-assets/dist/js/admin.js',
+			[ 'jquery' ],
+			ENPII_REST_API_PLUGIN_VERSION,
+			false
+		);
+
+		$enpiiDismissNotice = [
+			'nonce' => wp_create_nonce( 'enpii_dismiss_notice' ),
+		];
+
+		wp_localize_script( 'enpii-rest-api-admin-script', 'enpiiDismissNotice', $enpiiDismissNotice );
 	}
+
+	/**
+	 * Handles the AJAX request to dismiss the notice.
+	 */
+	public function dismiss_admin_notice() {
+		set_transient( 'enpii_rest_api_dismiss_notice', true, 86400 ); // Hide for 24 hours
+		wp_die();
+	}
+
 
 	// Define required plugins
 	protected function get_required_plugins() {
