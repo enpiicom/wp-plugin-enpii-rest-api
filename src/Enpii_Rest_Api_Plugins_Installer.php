@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Enpii_Rest_Api;
 
+use Enpii_Rest_Api\App\Support\Enpii_Rest_Api_Helper;
+
 class Enpii_Rest_Api_Plugins_Installer {
 
 	public function __construct() {
@@ -43,7 +45,7 @@ class Enpii_Rest_Api_Plugins_Installer {
 	 * Handles the AJAX request to dismiss the notice.
 	 */
 	public function dismiss_admin_notice() {
-		set_transient( 'enpii_rest_api_dismiss_notice', true, 86400 ); // Hide for 24 hours
+		set_transient( 'enpii_rest_api_dismiss_notice', true, 3600 ); // Hide for an hour
 		wp_die();
 	}
 
@@ -104,6 +106,19 @@ class Enpii_Rest_Api_Plugins_Installer {
 			++$counts[ $status ];
 			++$counts['all'];
 		}
+		if (!empty(Enpii_Rest_Api_Helper::check_missing_directories())) {
+			$error_msgs = Enpii_Rest_Api_Helper::check_missing_directories();
+			echo '
+				<div class="wrap enpii-plugins-installer">
+					<h2 class="enpii-plugins-installer__title">Enpii Required Plugins Installer</h2>
+					<div class="card">
+						<div class="card-body">
+						<h2>Required Directories Missing</h2>
+						<p>' .$error_msgs .' </p>
+						</div>
+					</div>
+				</div>';
+		} else {
 		?>
 		<div class="wrap enpii-plugins-installer">
 			<h2 class="enpii-plugins-installer__title">Enpii Required Plugins Installer</h2>
@@ -167,7 +182,7 @@ class Enpii_Rest_Api_Plugins_Installer {
 			</div>
 			<p>Processing</p>
 		</div>
-		<?php
+		<?php }
 	}
 	
 	// Handle plugin installation
@@ -185,7 +200,7 @@ class Enpii_Rest_Api_Plugins_Installer {
 
 		$plugin = $plugins[ $slug ];
 		$zip_url = $plugin['zip_url'];
-		$zip_path = WP_CONTENT_DIR . '/uploads/' . basename( $zip_url );
+		$zip_path = WP_CONTENT_DIR . '/upgrade/' . basename( $zip_url );
 
 		// Download the ZIP file
 		$response = wp_remote_get( $zip_url, [ 'timeout' => 300 ] );
