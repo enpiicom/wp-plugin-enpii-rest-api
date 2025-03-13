@@ -5,7 +5,7 @@
  * Description: This WordPress plugin provides a secure and efficient way to handle REST API authentication and user access control
  * Author:      dev@enpii.com, nptrac@yahoo.com
  * Author URI:  https://enpii.com/enpii-team/
- * Version:     0.0.1
+ * Version:     0.0.2
  * License:     MIT
  * License URI: https://mit-license.org/
  * Text Domain: enpii-rest-api

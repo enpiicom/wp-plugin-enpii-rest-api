@@ -4,7 +4,7 @@ Tags: enpii, enpii rest api, enpii-rest-api, enpii base, enpii-base, laravel, wo
 Requires at least: 6.0
 Tested up to: 6.7.1
 Requires PHP: 7.3
-Stable tag: 0.0.1
+Stable tag: 0.0.2
 License: MIT
 License URI: https://mit-license.org/
 
@@ -73,6 +73,10 @@ This WordPress plugin provides a secure and efficient way to handle REST API aut
 - You can use the Enpii Plugins Installer page, which lists all necessary plugins. From there, you can download and activate them directly.
 
 == Changelog ==
+
+= 0.0.2 - 2025-03-13 =
+
+- Update extract folders permission.
 
 = 0.0.1 - 2025-03-03 =
 

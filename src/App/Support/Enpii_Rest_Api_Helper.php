@@ -44,11 +44,11 @@ class Enpii_Rest_Api_Helper {
 		$missing_dirs = [];
 
 		if ( empty( $upload_path ) || ! is_dir( $upload_path ) ) {
-			$missing_dirs[] = __( '<p>Uploads directory is missing. Please create it with permission 0777.</p>', 'enpii-rest-api' );
+			$missing_dirs[] = __( '<p>- <strong>wp-content/uploads</strong> directory is missing. Please create it with permission 0777.</p>', 'enpii-rest-api' );
 		}
 
 		if ( ! is_dir( $upgrade_path ) ) {
-			$missing_dirs[] = __( '<p>Upgrade directory is missing. Please create it with permission 0777.</p>', 'enpii-rest-api' );
+			$missing_dirs[] = __( '<p>- <strong>wp-content/upgrade</strong> directory is missing. Please create it with permission 0777.</p>', 'enpii-rest-api' );
 		}
 
 		return implode( '', $missing_dirs );
@@ -59,7 +59,7 @@ class Enpii_Rest_Api_Helper {
 	 */
 	public static function get_missing_plugin_message(): string {
 		return sprintf(
-			__( '<p>Plugin <strong>%1$s</strong> is required. Please <a href="%2$s">click here</a> to install and activate it first.</p>', 'enpii-rest-api' ),
+			__( '<p>- Plugin <strong>%1$s</strong> is required. Please <a href="%2$s">click here</a> to install and activate it first.</p>', 'enpii-rest-api' ),
 			'Enpii Base',
 			static::get_enpii_plugins_installer_url()
 		);
