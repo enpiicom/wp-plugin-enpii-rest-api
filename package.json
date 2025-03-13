@@ -1,6 +1,6 @@
 {
   "name": "enpii-rest-api",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Enpii REST API packages",
   "scripts": {
     "build": "webpack --mode production",
