@@ -12,6 +12,48 @@ $filter-color: #50575e;
 $spinner-size: 80px;
 $spinner-dot-size: 7.2px;
 $spinner-animation-duration: 1.2s;
+$notice-bg-color: #faf8e6;
+
+.notice.enpii-rest-api-notice {
+    background-color: $notice-bg-color;
+    display: flex;
+    align-items: center;
+
+    .notice-content {
+        margin: 22px 0 23px;
+
+        h3 {
+            margin: 0 0 10px;
+        }
+
+        p {
+            padding: 0 0 3px;
+            margin: 0;
+        }
+    }
+
+    span.warning-icon {
+        position: relative;
+        display: block;
+        width: 70px;
+        height: 70px;
+        border-radius: 100%;
+        margin: 20px 17px 20px 5px;
+        flex-shrink: 0;
+
+        img {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            margin: auto;
+            padding: 12px;
+            box-sizing: border-box;
+            max-width: 100%;
+        }
+    }
+}
 
 .enpii-plugins-installer {
     &__tabs {
@@ -60,7 +102,7 @@ $spinner-animation-duration: 1.2s;
         td:nth-child(1) {
             width: 50%; // 2 parts
         }
-        
+
         th:nth-child(2),
         td:nth-child(2),
         th:nth-child(3),

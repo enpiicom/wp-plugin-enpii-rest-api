@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Enpii_Rest_Api;
 
+use Enpii_Rest_Api\App\Support\Enpii_Rest_Api_Helper;
+use Plugin_Upgrader;
+
 class Enpii_Rest_Api_Plugins_Installer {
 
 	public function __construct() {
@@ -12,12 +15,41 @@ class Enpii_Rest_Api_Plugins_Installer {
 		add_action( 'wp_ajax_enpii_install_plugin', [ $this, 'install_plugin' ] );
 		add_action( 'wp_ajax_enpii_activate_plugin', [ $this, 'activate_plugin' ] );
 		add_action( 'wp_ajax_enpii_deactivate_plugin', [ $this, 'deactivate_plugin' ] );
+		add_action( 'wp_ajax_enpii_rest_api_dismiss_notice', [ $this,'dismiss_admin_notice' ] );
+		add_action( 'wp_ajax_nopriv_enpii_rest_api_dismiss_notice', [ $this,'dismiss_admin_notice' ] );      
 	}
 
 	public function enqueue_admin_scripts( $hook ) {
-		wp_enqueue_style( 'enpii-rest-api-admin-style', plugin_dir_url( __FILE__ ) . '../public-assets/dist/css/admin.css', [], ENPII_REST_API_PLUGIN_VERSION );
-		wp_enqueue_script( 'enpii-rest-api-admin-script', plugin_dir_url( __FILE__ ) . '../public-assets/dist/js/admin.js', [ 'jquery' ], ENPII_REST_API_PLUGIN_VERSION, false );
+		wp_enqueue_style(
+			'enpii-rest-api-admin-style',
+			plugin_dir_url( __FILE__ ) . '../public-assets/dist/css/admin.css',
+			[],
+			ENPII_REST_API_PLUGIN_VERSION
+		);
+
+		wp_enqueue_script(
+			'enpii-rest-api-admin-script',
+			plugin_dir_url( __FILE__ ) . '../public-assets/dist/js/admin.js',
+			[ 'jquery' ],
+			ENPII_REST_API_PLUGIN_VERSION,
+			false
+		);
+
+		$enpiiDismissNotice = [
+			'nonce' => wp_create_nonce( 'enpii_dismiss_notice' ),
+		];
+
+		wp_localize_script( 'enpii-rest-api-admin-script', 'enpiiDismissNotice', $enpiiDismissNotice );
 	}
+
+	/**
+	 * Handles the AJAX request to dismiss the notice.
+	 */
+	public function dismiss_admin_notice() {
+		set_transient( 'enpii_rest_api_dismiss_notice', true, 3600 ); // Hide for an hour
+		wp_die();
+	}
+
 
 	// Define required plugins
 	protected function get_required_plugins() {
@@ -75,7 +107,23 @@ class Enpii_Rest_Api_Plugins_Installer {
 			++$counts[ $status ];
 			++$counts['all'];
 		}
-		?>
+		$error_msgs = '';
+		if ( ! empty( Enpii_Rest_Api_Helper::check_missing_directories() ) ) {
+			$error_msgs .= Enpii_Rest_Api_Helper::check_missing_directories();
+			if ( ! empty( $error_msgs ) ) {
+				echo '
+				<div class="wrap enpii-plugins-installer">
+					<h2 class="enpii-plugins-installer__title">Enpii Required Plugins Installer</h2>
+					<div class="card">
+						<div class="card-body">
+						<h2>Required Directories Missing</h2>
+						<p>' . $error_msgs . ' </p>
+						</div>
+					</div>
+				</div>';
+			} 
+		} else {
+			?>
 		<div class="wrap enpii-plugins-installer">
 			<h2 class="enpii-plugins-installer__title">Enpii Required Plugins Installer</h2>
 			<ul class="enpii-plugins-installer__tabs">
@@ -138,10 +186,11 @@ class Enpii_Rest_Api_Plugins_Installer {
 			</div>
 			<p>Processing</p>
 		</div>
-		<?php
+			<?php
+		}
 	}
 	
-	// Handle plugin installation
+	// Handle plugin installation using WordPress Core methods
 	public function install_plugin() {
 		if ( ! current_user_can( 'install_plugins' ) ) {
 			wp_send_json_error( 'Permission denied.' );
@@ -156,28 +205,74 @@ class Enpii_Rest_Api_Plugins_Installer {
 
 		$plugin = $plugins[ $slug ];
 		$zip_url = $plugin['zip_url'];
-		$zip_path = WP_CONTENT_DIR . '/uploads/' . basename( $zip_url );
+		$destination_folder = WP_CONTENT_DIR . '/' . $plugin['type']; // wp-content/plugins or wp-content/mu-plugins
 
-		// Download the ZIP file
-		$response = wp_remote_get( $zip_url, [ 'timeout' => 300 ] );
+		// Load required WordPress core files
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 
-		if ( is_wp_error( $response ) ) {
-			wp_send_json_error( 'Download failed: ' . $response->get_error_message() );
+		WP_Filesystem(); // Initialize WP_Filesystem
+
+		global $wp_filesystem;
+
+		// Ensure the upgrade directory exists
+		$upgrade_dir = WP_CONTENT_DIR . '/upgrade/';
+		if ( ! $wp_filesystem->is_dir( $upgrade_dir ) ) {
+			$wp_filesystem->mkdir( $upgrade_dir, 0777 );
 		}
 
-		$file_contents = wp_remote_retrieve_body( $response );
-		if ( ! file_put_contents( $zip_path, $file_contents ) ) {
-			wp_send_json_error( 'Failed to save ZIP file.' );
+		// 🔹 Download the ZIP file using WordPress' built-in function
+		$zip_path = download_url( $zip_url );
+
+		if ( is_wp_error( $zip_path ) ) {
+			wp_send_json_error( 'Download failed: ' . $zip_path->get_error_message() );
 		}
 
-		// Extract the ZIP file
-		WP_Filesystem();
-		$unzip_result = unzip_file( $zip_path, WP_CONTENT_DIR . '/' . $plugin['type'] );
-		unlink( $zip_path ); // Remove zip file after extraction
+		// 🔹 Extract the ZIP file into the wp-content/upgrade/ folder
+		$extract_folder = $upgrade_dir . $slug;
+		$unzip_result = unzip_file( $zip_path, $extract_folder );
 
 		if ( is_wp_error( $unzip_result ) ) {
-			wp_send_json_error( 'Extraction failed.' );
+			unlink( $zip_path ); // Remove the failed ZIP file
+			wp_send_json_error( 'Extraction failed: ' . $unzip_result->get_error_message() );
 		}
+
+		// Identify extracted plugin folder
+		$extracted_plugin_folders = array_diff( scandir( $extract_folder ), [ '.', '..' ] );
+
+		if ( count( $extracted_plugin_folders ) !== 1 ) {
+			unlink( $zip_path );
+			$wp_filesystem->delete( $extract_folder, true );
+			wp_send_json_error( 'Invalid plugin structure. No valid plugin folder found.' );
+		}
+
+		$extracted_plugin_path = $extract_folder . '/' . reset( $extracted_plugin_folders );
+		$final_plugin_path = $destination_folder . '/' . $plugin['folder'];
+
+		// 🔹 Move extracted folder to final plugin directory using WordPress' install_package() method
+		$upgrader = new Plugin_Upgrader();
+		$install_result = $upgrader->install_package(
+			[
+				'source'            => $extracted_plugin_path,
+				'destination'       => $final_plugin_path,
+				'clear_destination' => true,
+				'clear_working'     => true,
+				'hook_extra'        => [
+					'type'   => 'plugin',
+					'action' => 'install',
+				],
+			]
+		);
+
+		if ( is_wp_error( $install_result ) ) {
+			$wp_filesystem->delete( $extract_folder, true );
+			wp_send_json_error( 'Failed to install plugin: ' . $install_result->get_error_message() );
+		}
+
+		// 🔹 Cleanup - Delete ZIP and extracted folder
+		unlink( $zip_path );
+		$wp_filesystem->delete( $extract_folder, true );
 
 		wp_send_json_success(
 			[
@@ -187,7 +282,7 @@ class Enpii_Rest_Api_Plugins_Installer {
 			]
 		);
 	}
-
+	
 	// Handle plugin activation
 	public function activate_plugin() {
 		if ( ! current_user_can( 'activate_plugins' ) ) {

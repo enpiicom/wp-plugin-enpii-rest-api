@@ -2,7 +2,7 @@
   "name": "enpii/enpii-rest-api",
   "type": "wordpress-plugin",
   "description": "Enpii REST API - This WordPress plugin provides a secure and efficient way to handle REST API authentication and user access control",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "time": "2025-02-25 20:14:04",
   "homepage": "https://enpii.com/wp-plugin-enpii-rest-api",
   "license": "MIT",
