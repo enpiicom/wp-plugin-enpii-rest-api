@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Enpii_Rest_Api;
 
 use Enpii_Rest_Api\App\Support\Enpii_Rest_Api_Helper;
+use Plugin_Upgrader;
 
 class Enpii_Rest_Api_Plugins_Installer {
 
@@ -106,9 +107,11 @@ class Enpii_Rest_Api_Plugins_Installer {
 			++$counts[ $status ];
 			++$counts['all'];
 		}
+		$error_msgs = '';
 		if ( ! empty( Enpii_Rest_Api_Helper::check_missing_directories() ) ) {
-			$error_msgs = Enpii_Rest_Api_Helper::check_missing_directories();
-			echo '
+			$error_msgs .= Enpii_Rest_Api_Helper::check_missing_directories();
+			if ( ! empty( $error_msgs ) ) {
+				echo '
 				<div class="wrap enpii-plugins-installer">
 					<h2 class="enpii-plugins-installer__title">Enpii Required Plugins Installer</h2>
 					<div class="card">
@@ -118,6 +121,7 @@ class Enpii_Rest_Api_Plugins_Installer {
 						</div>
 					</div>
 				</div>';
+			} 
 		} else {
 			?>
 		<div class="wrap enpii-plugins-installer">
@@ -186,7 +190,7 @@ class Enpii_Rest_Api_Plugins_Installer {
 		}
 	}
 	
-	// Handle plugin installation
+	// Handle plugin installation using WordPress Core methods
 	public function install_plugin() {
 		if ( ! current_user_can( 'install_plugins' ) ) {
 			wp_send_json_error( 'Permission denied.' );
@@ -201,69 +205,74 @@ class Enpii_Rest_Api_Plugins_Installer {
 
 		$plugin = $plugins[ $slug ];
 		$zip_url = $plugin['zip_url'];
-		$zip_path = WP_CONTENT_DIR . '/upgrade/' . basename( $zip_url );
-		$destination_folder = WP_CONTENT_DIR . '/' . $plugin['type'];
+		$destination_folder = WP_CONTENT_DIR . '/' . $plugin['type']; // wp-content/plugins or wp-content/mu-plugins
 
-		// Load WP_Filesystem
-		if ( ! function_exists( 'WP_Filesystem' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/file.php';
-		}
+		// Load required WordPress core files
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 
 		WP_Filesystem(); // Initialize WP_Filesystem
 
 		global $wp_filesystem;
 
-		// Ensure wp-content/upgrade exists and is writable
-		if ( ! $wp_filesystem->is_dir( WP_CONTENT_DIR . '/upgrade/' ) ) {
-			$wp_filesystem->mkdir( WP_CONTENT_DIR . '/upgrade/', 0777 );
+		// Ensure the upgrade directory exists
+		$upgrade_dir = WP_CONTENT_DIR . '/upgrade/';
+		if ( ! $wp_filesystem->is_dir( $upgrade_dir ) ) {
+			$wp_filesystem->mkdir( $upgrade_dir, 0777 );
 		}
 
-		// Download the ZIP file
-		$response = wp_safe_remote_get( $zip_url, [ 'timeout' => 300 ] );
+		// 🔹 Download the ZIP file using WordPress' built-in function
+		$zip_path = download_url( $zip_url );
 
-		if ( is_wp_error( $response ) ) {
-			wp_send_json_error( 'Download failed: ' . $response->get_error_message() );
+		if ( is_wp_error( $zip_path ) ) {
+			wp_send_json_error( 'Download failed: ' . $zip_path->get_error_message() );
 		}
 
-		$file_contents = wp_remote_retrieve_body( $response );
-		if ( ! file_put_contents( $zip_path, $file_contents ) ) {
-			wp_send_json_error( 'Failed to save ZIP file.' );
-		}
-
-		// Extract the ZIP file into a temporary directory
-		$temp_extract_folder = WP_CONTENT_DIR . '/upgrade/temp-' . $slug;
-		if ( ! $wp_filesystem->is_dir( $temp_extract_folder ) ) {
-			$wp_filesystem->mkdir( $temp_extract_folder, 0777 );
-		}
-
-		$unzip_result = unzip_file( $zip_path, $temp_extract_folder );
+		// 🔹 Extract the ZIP file into the wp-content/upgrade/ folder
+		$extract_folder = $upgrade_dir . $slug;
+		$unzip_result = unzip_file( $zip_path, $extract_folder );
 
 		if ( is_wp_error( $unzip_result ) ) {
-			$wp_filesystem->delete( $zip_path );
-			$wp_send_json_error( 'Extraction failed: ' . $unzip_result->get_error_message() );
+			unlink( $zip_path ); // Remove the failed ZIP file
+			wp_send_json_error( 'Extraction failed: ' . $unzip_result->get_error_message() );
 		}
 
-		// Identify the extracted plugin folder
-		$extracted_plugin_folders = array_diff( scandir( $temp_extract_folder ), [ '.', '..' ] );
+		// Identify extracted plugin folder
+		$extracted_plugin_folders = array_diff( scandir( $extract_folder ), [ '.', '..' ] );
+
 		if ( count( $extracted_plugin_folders ) !== 1 ) {
-			$wp_filesystem->delete( $zip_path );
-			$wp_filesystem->delete( $temp_extract_folder, true );
-			wp_send_json_error( 'Invalid plugin structure.' );
+			unlink( $zip_path );
+			$wp_filesystem->delete( $extract_folder, true );
+			wp_send_json_error( 'Invalid plugin structure. No valid plugin folder found.' );
 		}
-		$extracted_plugin_path = $temp_extract_folder . '/' . reset( $extracted_plugin_folders );
 
-		// Final plugin destination
+		$extracted_plugin_path = $extract_folder . '/' . reset( $extracted_plugin_folders );
 		$final_plugin_path = $destination_folder . '/' . $plugin['folder'];
 
-		// Move extracted folder to the correct plugin location
-		if ( ! rename( $extracted_plugin_path, $final_plugin_path ) ) {
-			$wp_filesystem->delete( $temp_extract_folder, true );
-			wp_send_json_error( 'Failed to move plugin to the correct location.' );
+		// 🔹 Move extracted folder to final plugin directory using WordPress' install_package() method
+		$upgrader = new Plugin_Upgrader();
+		$install_result = $upgrader->install_package(
+			[
+				'source'            => $extracted_plugin_path,
+				'destination'       => $final_plugin_path,
+				'clear_destination' => true,
+				'clear_working'     => true,
+				'hook_extra'        => [
+					'type'   => 'plugin',
+					'action' => 'install',
+				],
+			]
+		);
+
+		if ( is_wp_error( $install_result ) ) {
+			$wp_filesystem->delete( $extract_folder, true );
+			wp_send_json_error( 'Failed to install plugin: ' . $install_result->get_error_message() );
 		}
 
-		// Clean up: Remove ZIP file and temporary extract folder
-		$wp_filesystem->delete( $zip_path );
-		$wp_filesystem->delete( $temp_extract_folder, true );
+		// 🔹 Cleanup - Delete ZIP and extracted folder
+		unlink( $zip_path );
+		$wp_filesystem->delete( $extract_folder, true );
 
 		wp_send_json_success(
 			[
@@ -273,9 +282,7 @@ class Enpii_Rest_Api_Plugins_Installer {
 			]
 		);
 	}
-
-
-
+	
 	// Handle plugin activation
 	public function activate_plugin() {
 		if ( ! current_user_can( 'activate_plugins' ) ) {

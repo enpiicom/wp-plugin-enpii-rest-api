@@ -11,6 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 new Enpii_Rest_Api_Plugins_Installer();
 
 // Check for missing directories
+$error_message = '';
 $error_message = Enpii_Rest_Api_Helper::check_missing_directories();
 
 // Check for required plugin (Enpii Base)
@@ -36,8 +37,9 @@ if ( ! Enpii_Rest_Api_Helper::check_enpii_base_plugin() ) {
 	}
 }
 
+
 // Display error messages in admin notice if needed
-if ( $error_message ) {
+if ( ! empty( $error_message ) ) {
 	add_action(
 		'admin_notices',
 		function () use ( $error_message ) {
