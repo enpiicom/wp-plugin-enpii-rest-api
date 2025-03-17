@@ -13,6 +13,7 @@ class Enpii_Rest_Api_Helper {
 		return (bool) class_exists( \Enpii_Base\App\WP\WP_Application::class );
 	}
 
+
 	public static function get_enpii_plugins_installer_url(): string {
 		return admin_url( 'admin.php?page=enpii-plugins-installer' );
 	}
